@@ -4,6 +4,7 @@ export type SunIndex = 'EARLY_SOFT' | 'MID_BALANCED' | 'LATE_INTENSE'
 export type BloomStage = 'dormant' | 'budding' | 'bud' | 'half_open' | 'open' | 'fully_open' | 'spent' | 'hip_forming'
 export type AliasType = 'trade' | 'nursery' | 'common' | 'mislabel'
 export type PlantStructureType = 'cane' | 'stem_cluster' | 'vine_runner' | 'woody_branch'
+export type PropagationStatus = 'none' | 'cutting_taken' | 'propagated'
 
 export interface RoseEntity {
   id: string
@@ -50,6 +51,8 @@ export interface Plant {
   sun_index: SunIndex | null
   user_id: string | null
   created_at: string
+  propagation_status?: PropagationStatus
+  propagation_notes?: string | null
   rose_entity?: RoseEntity
   garden?: Garden
 }

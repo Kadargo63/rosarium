@@ -10,8 +10,6 @@ const inter = Inter({ subsets: ['latin'] })
 export const metadata: Metadata = {
   title: 'Rosarium',
   description: 'Precision rose intelligence system',
-  manifest: '/manifest.json',
-  themeColor: '#be185d',
 }
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {

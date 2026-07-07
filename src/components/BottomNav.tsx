@@ -1,7 +1,7 @@
 ﻿"use client"
 import Link from 'next/link'
 import { usePathname } from 'next/navigation'
-import { HomeIcon, LeafIcon, BarChart2Icon } from 'lucide-react'
+import { HomeIcon, LeafIcon, BarChart2Icon, Scissors } from 'lucide-react'
 
 export function BottomNav() {
   const pathname = usePathname()
@@ -14,6 +14,7 @@ export function BottomNav() {
         {[
           { href: '/', label: 'Home', icon: HomeIcon },
           { href: '/plants', label: 'Plants', icon: LeafIcon },
+          { href: '/propagation', label: 'Propagate', icon: Scissors },
           { href: '/analytics', label: 'Analytics', icon: BarChart2Icon },
         ].map(({ href, label, icon: Icon }) => {
           const active = href === '/' ? pathname === '/' : pathname.startsWith(href)
