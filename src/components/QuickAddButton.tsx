@@ -30,15 +30,14 @@ export function QuickAddButton() {
   useEffect(() => {
     if (!open) return
     setLoadingCatalog(true)
-    const supabase = getSupabase()
-    Promise.all([
-      supabase.from('rose_entities').select('*').order('canonical_name'),
-      supabase.from('gardens').select('*').order('name'),
-    ]).then(([{ data: r, error: rErr }, { data: g }]) => {
-      if (rErr) { toast.error('Could not load rose catalog'); return }
-      if (r) setRoses(r as RoseEntity[])
-      if (g) setGardens(g as Garden[])
-    }).catch(() => toast.error('Could not load rose catalog'))
+    fetch('/api/roses')
+      .then((res) => res.json())
+      .then(({ roses: r, gardens: g, error }) => {
+        if (error) { toast.error('Could not load rose catalog: ' + error); return }
+        if (r) setRoses(r as RoseEntity[])
+        if (g) setGardens(g as Garden[])
+      })
+      .catch(() => toast.error('Could not load rose catalog'))
       .finally(() => setLoadingCatalog(false))
     setTimeout(() => inputRef.current?.focus(), 150)
   }, [open])
