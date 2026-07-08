@@ -1,6 +1,6 @@
 # Rosarium — Data Architecture
 
-> Last updated: 2026-07-07
+> Last updated: 2026-07-08
 > Stack: Next.js 14 · Supabase (PostgreSQL + Storage) · TypeScript · Zustand
 
 ---
@@ -13,6 +13,10 @@
 | `supabase/001_initial.sql` | All tables, indexes, RLS stubs |
 | `supabase/002_seed.sql` | 7 gardens, 33 rose entities, aliases, ~50 plant instances |
 | `supabase/003_propagation.sql` | Adds `propagation_status` + `propagation_notes` to `plants` |
+| `supabase/004_rose_metadata.sql` | Adds `country_of_origin` to `rose_entities` |
+| `supabase/005_rose_catalog.sql` | 120 additional rose varieties with full metadata |
+| `supabase/006_backfill_origin.sql` | Sets `country_of_origin` on original 33 seed roses |
+| `supabase/007_propagation_batches.sql` | `propagation_batches` + `propagation_batch_updates` tables |
 
 ### Tables
 
@@ -31,6 +35,7 @@
 | year_introduced | int | |
 | species | text DEFAULT 'Rosa x hybrida' | |
 | notes | text | |
+| country_of_origin | text | Added migration 004. Displayed on plant detail page. |
 | created_at | timestamptz | |
 
 #### `rose_aliases` — trade/nursery/common names
@@ -74,6 +79,34 @@ Seeded: North Wall, East Fence, Front Garden, Climbers, Sophie's Garden, Saul's 
 | propagation_notes | text | Free text, added 003 |
 
 Indexes: `idx_plants_garden_id`, `idx_plants_rose_id`, `idx_plants_propagation_status`
+
+#### `propagation_batches` — cutting batch records per plant
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| parent_plant_id | uuid FK → plants | CASCADE delete |
+| batch_code | text NOT NULL | Short printable tag code e.g. `VOO-0708` (auto-generated) |
+| date_taken | date NOT NULL | Default current_date |
+| initial_count | int NOT NULL | Number of cuttings taken |
+| notes | text | |
+| status | enum DEFAULT 'active' | active \| complete \| abandoned |
+| created_at | timestamptz | |
+
+Indexes: `idx_prop_batches_plant`, `idx_prop_batches_status`
+
+#### `propagation_batch_updates` — viability log per batch
+| Column | Type | Notes |
+|--------|------|-------|
+| id | uuid PK | |
+| batch_id | uuid FK → propagation_batches | CASCADE delete |
+| update_date | date NOT NULL | |
+| viable_count | int | Cuttings still alive |
+| failed_count | int | Removed as dead |
+| rooted_count | int | Confirmed rooted with new growth |
+| notes | text | |
+| created_at | timestamptz | |
+
+Index: `idx_prop_batch_updates_batch`
 
 #### `logs` — append-only weekly performance records
 | Column | Type | Notes |
@@ -189,17 +222,20 @@ erDiagram
 | `AliasType` | trade \| nursery \| common \| mislabel |
 | `PlantStructureType` | cane \| stem_cluster \| vine_runner \| woody_branch |
 | `PropagationStatus` | none \| cutting_taken \| propagated |
+| `BatchStatus` | active \| complete \| abandoned |
 | `FeedbackTag` | structure \| health \| bloom_quality \| airflow \| pruning_suggestion \| color \| fragrance \| disease |
 
 ### Core interfaces
 ```
-RoseEntity          ← maps rose_entities table
+RoseEntity          ← maps rose_entities table (incl. country_of_origin)
 RoseAlias           ← maps rose_aliases table
 Garden              ← maps gardens table
 Plant               ← maps plants table (propagation_status/notes optional for backward compat)
 Log                 ← maps logs table
 Photo               ← maps photos table
 Feedback            ← maps feedback table
+PropagationBatch    ← maps propagation_batches table (with optional parent_plant join)
+PropagationBatchUpdate ← maps propagation_batch_updates table
 ```
 
 ### Derived / computed types
@@ -228,7 +264,7 @@ All functions use the lazy Supabase singleton from `src/lib/supabase.ts`.
 
 | Function | Table(s) | Notes |
 |----------|----------|-------|
-| `getPlants()` | plants + rose_entities + gardens | Returns `PlantWithDetails[]`, ordered by created_at |
+| `getPlants()` | plants + logs + rose_entities + gardens | Returns `PlantWithDetails[]` with `latest_log` and `log_count` hydrated from a second parallel logs query |
 | `getPlant(id)` | plants + rose_entities + gardens | Single plant, null if not found |
 | `createPlant(plant)` | plants | Inserts, returns full row |
 | `updatePlant(id, updates)` | plants | Partial update |
@@ -241,6 +277,12 @@ All functions use the lazy Supabase singleton from `src/lib/supabase.ts`.
 | `createFeedback(feedback)` | feedback | Inserts |
 | `getRoseEntities()` | rose_entities + rose_aliases | Full catalog |
 | `getGardens()` | gardens | Ordered by name |
+| `getGardensWithCounts()` | gardens + plants | Joins plant count per garden in JS |
+| `createPropagationBatch(batch)` | propagation_batches | Inserts batch record |
+| `getActiveBatches()` | propagation_batches + plants + rose_entities + batch_updates | All `status = 'active'` batches with parent plant info |
+| `getBatchesByPlant(plantId)` | propagation_batches + batch_updates | All batches for one plant |
+| `addBatchUpdate(update)` | propagation_batch_updates | Inserts a viability snapshot |
+| `updateBatchStatus(batchId, status)` | propagation_batches | Mark active/complete/abandoned |
 
 ---
 
@@ -308,29 +350,31 @@ Accepts: `{ status: PropagationStatus, notes?: string }`
 Guards:
 - Validates `status` is one of `['none', 'cutting_taken', 'propagated']`
 - Returns 400 on invalid JSON or invalid status
-- Returns 500 on DB error
+
+Note: Propagation batch CRUD (`propagation_batches`, `propagation_batch_updates`) is done directly via the Supabase anon client from client components — no dedicated API routes needed.
 
 ---
 
 ## 8. State Management (`src/store/useStore.ts`)
 
-Zustand store — used for optimistic UI, not primary data fetching (pages use server components + direct Supabase queries).
+Zustand store — used for optimistic UI and cross-component state sharing.
 
 ```
 RosariumState {
   plants: PlantWithDetails[]
   gardens: Garden[]
   selectedPlantId: string | null
+  quickAddOpen: boolean       ← shared between BottomNav (+) and QuickAddButton modal
 
   setPlants(plants)
   setGardens(gardens)
   setSelectedPlantId(id)
-  addLog(log)          ← updates latest_log and log_count on the matching plant
-  addPhoto(_photo)     ← stub (no-op currently)
+  openQuickAdd()             ← called by BottomNav FAB
+  closeQuickAdd()            ← called by QuickAddButton on dismiss
+  addLog(log)                ← updates latest_log and log_count on the matching plant
+  addPhoto(_photo)           ← stub (no-op currently)
 }
 ```
-
-Note: The store is currently lightly used. Pages predominantly fetch fresh data server-side. The store serves as a client cache for optimistic updates post-form submission.
 
 ---
 
@@ -339,13 +383,16 @@ Note: The store is currently lightly used. Pages predominantly fetch fresh data 
 | Route | File | Render | Data Sources |
 |-------|------|--------|--------------|
 | `/` | `app/page.tsx` | Server | `getPlants()`, `getTopPerformers(5)`, `getNeedsAttention(9)` |
-| `/plants` | `app/plants/page.tsx` | Server | `getPlants()`, `getGardens()` |
+| `/plants` | `app/plants/page.tsx` | Server | `getPlants()`, `getGardens()`. Supports `?view=garden` (default) and `?view=type` |
 | `/plants/add` | `app/plants/add/page.tsx` | Client | `getGardens()` (effect), `resolveRose()` (live), `createPlant()` |
 | `/plants/[id]` | `app/plants/[id]/page.tsx` | Server | `getPlant()`, `getLogsByPlant()`, `getPhotosByPlant()`, `getFeedbackByPlant()` |
 | `/log/[plantId]` | `app/log/[plantId]/page.tsx` | Server (shell) + Client (form) | `getPlant()` server-side; `createLog()`, `uploadPhoto()`, `createPhoto()` client-side |
 | `/analytics` | `app/analytics/page.tsx` | Server | `getPlantAnalytics()`, `getTopPerformers(10)` |
-| `/propagation` | `app/propagation/page.tsx` | Server | `plants` + `rose_entities` + `gardens` (custom query) |
+| `/gardens` | `app/gardens/page.tsx` | Server | `getGardensWithCounts()`. Full CRUD via Supabase client in `GardenManager` |
+| `/propagation` | `app/propagation/page.tsx` | Server | `plants` + `rose_entities` + `gardens` (custom query). Variety count computed in JS |
+| `/propagation/batches` | `app/propagation/batches/page.tsx` | Server | `getActiveBatches()` with parent plant + update history |
 | `/feedback/[plantId]` | `app/feedback/[plantId]/page.tsx` | Server (shell) + Client (form) | `getPlant()` server-side; `POST /api/feedback` client-side |
+| `/offline` | `app/offline/page.tsx` | Client | Static fallback shown by service worker when offline |
 
 ---
 

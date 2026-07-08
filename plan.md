@@ -128,44 +128,44 @@ rosarium/
 
 ---
 
-## Build Status (2026-07-07)
+## Build Status (2026-07-08)
 
-### ✅ Completed
-| Phase | Item | Notes |
-|-------|------|-------|
-| A | Database schema (001_initial.sql) | All tables, indexes, RLS stubs |
-| A | Seed data (002_seed.sql) | 7 gardens, 33 rose entities, ~50 plant instances |
-| B | Plant list page (`/plants`) | Grouped by garden, ARS badges |
-| B | Plant detail page (`/plants/[id]`) | Analytics strip, gallery, log timeline, feedback, share |
-| B | Add plant form (`/plants/add`) | Live rose resolver, garden selector |
-| C | Log entry page (`/log/[plantId]`) | Vigor/health/stem sliders, bloom stage, photo upload |
-| D | Analytics page (`/analytics`) | Bar chart, top performers, full table |
-| E | Feedback API (`POST /api/feedback`) | Rate-limited, honeypot |
-| E | Public feedback page (`/feedback/[plantId]`) | No auth, tags, rating, comment |
-| F | PWA manifest + icon | `src/app/manifest.ts`, `src/app/icon.tsx` (512×512 ImageResponse) |
-| F | allowedDevOrigins | `next.config.js` — dev phone access without CORS warning |
-| F | Photo gallery full implementation | Navigation, log context metadata, lazy load |
-| F | Web Share API (`ShareButton`) | Native share sheet on mobile, clipboard fallback |
-| + | Propagation Tracker | `/propagation` — critical/standard split, tap-to-cycle, progress bar |
-| + | Propagation DB migration (003) | `propagation_status`, `propagation_notes` on plants |
-| + | PATCH `/api/propagation/[plantId]` | Validated PATCH endpoint |
-| + | PWA QR code (`PhoneQR`) | Auto-detects origin, desktop-only, links to `/propagation` |
-| + | Architecture doc | `data_architecture.md` — schema, types, queries, component map |
+### ✅ Completed — All phases done
+| Area | Item | Files |
+|------|------|-------|
+| DB | 001–007 migrations | schema, seed, propagation status, rose metadata, catalog×120, origin backfill, batch tables |
+| DB | Rose catalog | 153 varieties with breeder, class, color, year, country |
+| UI | Dashboard | Stats, needs-attention, top performers, QR code (desktop) |
+| UI | Plant list | By Location AND By Type toggle (`?view=type`), Manage locations link |
+| UI | Plant detail | Full metadata (class, color, year, country), analytics strip, gallery, log timeline, feedback, share |
+| UI | Log entry | Date picker (backdatable), vigor/health/stem sliders, bloom stage, photo upload |
+| UI | Quick Add | Floating FAB in bottom nav — catalog search, multi-select queue, garden picker |
+| UI | Gardens | Full CRUD — add, rename, delete (with plant reassignment) at `/gardens` |
+| UI | Propagation tracker | Critical/standard split, tap-to-cycle, ✂ batch recording inline |
+| UI | Propagation batches | `/propagation/batches` — viability tracking, update counts over time, mark complete |
+| UI | Analytics | Bar chart, table, garden avg stats |
+| UI | Feedback | Public shareable link per plant, honeypot + rate limiting |
+| UI | Photo gallery | Lightbox with nav, log date/bloom/vigor context |
+| PWA | Icons + manifest | 512×512 ImageResponse icon, manifest.ts, service worker |
+| PWA | Offline fallback | `/offline` page, Workbox SW via `@ducanh2912/next-pwa` |
+| Nav | Bottom nav | Home · Plants · ⊕ (FAB) · Propagate · Analytics |
+| Nav | Side nav (desktop) | Dashboard · Plants · Locations · Propagation · Analytics |
 
-### 🔲 Backlog
-| Item | Effort | Blocked by |
-|------|--------|------------|
-| Supabase Auth (GitHub + Google OAuth) | Large | — |
-| Club Member Gardens & Photos | Large | Auth |
-| Built-in Social Feed (posts/comments) | Large | Auth + Club |
-| Bloom Prediction / Analytics expansion | Medium | More log data |
-| Offline / Service Worker | Medium | — |
+### 🔲 Intentionally deferred
+| Item | Reason |
+|------|--------|
+| Supabase Auth | Single-user app — private URL is sufficient |
+| Club gardens / Social feed | Requires auth first |
+| Bloom prediction | Needs months of log data |
 
-### Known Tech Debt
+### Known tech debt
 - `addPhoto` in Zustand store is a no-op stub
-- `resolveRose()` fetches all entities on every keystroke (acceptable at current scale)
-- In-memory rate limiter in feedback route resets on server restart
-- `PlantWithDetails.latest_log` is not populated by any server query (only Zustand)
+- `resolveRose()` fetches all entities per keystroke (fine at current scale)
+- In-memory rate limiter on `/api/feedback` resets on server restart
+- `<img>` used in PhotoGallery/PhotoUploader instead of `next/image` (Supabase URLs need domain config)
+
+### SQL migrations still to run
+If starting from a fresh DB, run in order: 001 → 002 → 003 → 004 → 005 → 006 → 007
 
 ### See Also
 - Full data model and component dependency map: `data_architecture.md`
