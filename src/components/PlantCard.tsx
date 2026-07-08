@@ -59,6 +59,5 @@ export function PlantCard({ plant }: Props) {
         )}
         </CardContent>
       </Card>
-    </Link>
   )
 }

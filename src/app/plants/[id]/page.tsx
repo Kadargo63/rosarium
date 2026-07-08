@@ -53,6 +53,12 @@ export default async function PlantDetailPage({ params }: { params: { id: string
             {rose.pruning_model && (
               <Badge variant="outline" className="text-xs">{PRUNING_MODEL_LABELS[rose.pruning_model]}</Badge>
             )}
+            {rose.year_introduced && (
+              <Badge variant="outline" className="text-xs">Est. {rose.year_introduced}</Badge>
+            )}
+            {rose.country_of_origin && (
+              <Badge variant="outline" className="text-xs">{rose.country_of_origin}</Badge>
+            )}
           </div>
         )}
       </div>

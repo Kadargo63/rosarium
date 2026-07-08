@@ -2,12 +2,31 @@
 import type { Plant, Log, Photo, Feedback, RoseEntity, Garden, PlantWithDetails } from '@/types/schema'
 
 export async function getPlants(): Promise<PlantWithDetails[]> {
-  const { data, error } = await supabase
-    .from('plants')
-    .select(`*, rose_entity:rose_entities(*), garden:gardens(*)`)
-    .order('created_at', { ascending: true })
-  if (error) throw error
-  return data as PlantWithDetails[]
+  const [{ data: plants, error: pErr }, { data: allLogs, error: lErr }] = await Promise.all([
+    supabase
+      .from('plants')
+      .select('*, rose_entity:rose_entities(*), garden:gardens(*)')
+      .order('created_at', { ascending: true }),
+    supabase
+      .from('logs')
+      .select('id, plant_id, date, vigor, health, bloom_stage, stem_quality, notes, created_at')
+      .order('date', { ascending: false }),
+  ])
+  if (pErr) throw pErr
+  if (lErr) throw lErr
+
+  const latestLogMap: Record<string, Log> = {}
+  const logCountMap: Record<string, number> = {}
+  for (const log of (allLogs ?? []) as Log[]) {
+    logCountMap[log.plant_id] = (logCountMap[log.plant_id] ?? 0) + 1
+    if (!latestLogMap[log.plant_id]) latestLogMap[log.plant_id] = log
+  }
+
+  return ((plants ?? []) as PlantWithDetails[]).map((p) => ({
+    ...p,
+    latest_log: latestLogMap[p.id],
+    log_count: logCountMap[p.id] ?? 0,
+  }))
 }
 
 export async function getPlant(id: string): Promise<PlantWithDetails | null> {
@@ -99,4 +118,57 @@ export async function getGardens(): Promise<Garden[]> {
   const { data, error } = await supabase.from('gardens').select('*').order('name')
   if (error) throw error
   return data ?? []
+}
+
+// ── Propagation Batches ────────────────────────────────────────────────────
+
+export async function createPropagationBatch(batch: {
+  parent_plant_id: string
+  batch_code: string
+  date_taken: string
+  initial_count: number
+  notes: string | null
+  status: 'active'
+}) {
+  const { data, error } = await supabase.from('propagation_batches').insert(batch).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function getActiveBatches() {
+  const { data, error } = await supabase
+    .from('propagation_batches')
+    .select('*, parent_plant:plants(label_name, rose_entity:rose_entities(canonical_name)), propagation_batch_updates(*)')
+    .eq('status', 'active')
+    .order('date_taken', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function getBatchesByPlant(plantId: string) {
+  const { data, error } = await supabase
+    .from('propagation_batches')
+    .select('*, propagation_batch_updates(*)')
+    .eq('parent_plant_id', plantId)
+    .order('date_taken', { ascending: false })
+  if (error) throw error
+  return data ?? []
+}
+
+export async function addBatchUpdate(update: {
+  batch_id: string
+  update_date: string
+  viable_count: number | null
+  failed_count: number | null
+  rooted_count: number | null
+  notes: string | null
+}) {
+  const { data, error } = await supabase.from('propagation_batch_updates').insert(update).select().single()
+  if (error) throw error
+  return data
+}
+
+export async function updateBatchStatus(batchId: string, status: 'active' | 'complete' | 'abandoned') {
+  const { error } = await supabase.from('propagation_batches').update({ status }).eq('id', batchId)
+  if (error) throw error
 }

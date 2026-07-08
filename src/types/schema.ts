@@ -5,6 +5,31 @@ export type BloomStage = 'dormant' | 'budding' | 'bud' | 'half_open' | 'open' | 
 export type AliasType = 'trade' | 'nursery' | 'common' | 'mislabel'
 export type PlantStructureType = 'cane' | 'stem_cluster' | 'vine_runner' | 'woody_branch'
 export type PropagationStatus = 'none' | 'cutting_taken' | 'propagated'
+export type BatchStatus = 'active' | 'complete' | 'abandoned'
+
+export interface PropagationBatch {
+  id: string
+  parent_plant_id: string
+  batch_code: string
+  date_taken: string
+  initial_count: number
+  notes: string | null
+  status: BatchStatus
+  created_at: string
+  parent_plant?: { label_name: string; rose_entity?: { canonical_name: string } | null }
+  latest_update?: PropagationBatchUpdate | null
+}
+
+export interface PropagationBatchUpdate {
+  id: string
+  batch_id: string
+  update_date: string
+  viable_count: number | null
+  failed_count: number | null
+  rooted_count: number | null
+  notes: string | null
+  created_at: string
+}
 
 export interface RoseEntity {
   id: string

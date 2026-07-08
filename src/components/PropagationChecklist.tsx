@@ -1,6 +1,9 @@
 'use client'
 import { useState } from 'react'
-import { Scissors, CheckCircle2, Circle, Loader2 } from 'lucide-react'
+import { Scissors, CheckCircle2, Circle, Loader2, ClipboardListIcon } from 'lucide-react'
+import { getSupabase } from '@/lib/supabase'
+import { toast } from 'sonner'
+import Link from 'next/link'
 import type { PropagationStatus } from '@/types/schema'
 
 const CYCLE: PropagationStatus[] = ['none', 'cutting_taken', 'propagated']
@@ -23,6 +26,56 @@ export interface PropagationPlant {
 export function PropagationChecklist({ initialPlants }: { initialPlants: PropagationPlant[] }) {
   const [plants, setPlants] = useState(initialPlants)
   const [updating, setUpdating] = useState<Set<string>>(new Set())
+  const [activeCuttingId, setActiveCuttingId] = useState<string | null>(null)
+  const [batchCode, setBatchCode] = useState('')
+  const [cutCount, setCutCount] = useState(1)
+  const [cutNotes, setCutNotes] = useState('')
+  const [savingBatch, setSavingBatch] = useState(false)
+
+  const genCode = (canonicalName: string) => {
+    const letters = canonicalName.replace(/[^a-zA-Z]/g, '').toUpperCase().slice(0, 3)
+    const d = new Date()
+    const mm = String(d.getMonth() + 1).padStart(2, '0')
+    const dd = String(d.getDate()).padStart(2, '0')
+    return `${letters}-${mm}${dd}`
+  }
+
+  const openCuttingForm = (plant: PropagationPlant) => {
+    setActiveCuttingId(plant.id === activeCuttingId ? null : plant.id)
+    setBatchCode(genCode(plant.canonical_name))
+    setCutCount(1)
+    setCutNotes('')
+  }
+
+  const saveBatch = async (plant: PropagationPlant) => {
+    if (!batchCode.trim()) return
+    setSavingBatch(true)
+    try {
+      const supabase = getSupabase()
+      await supabase.from('propagation_batches').insert({
+        parent_plant_id: plant.id,
+        batch_code: batchCode.trim(),
+        date_taken: new Date().toISOString().split('T')[0],
+        initial_count: cutCount,
+        notes: cutNotes.trim() || null,
+        status: 'active',
+      })
+      if (plant.propagation_status === 'none') {
+        await fetch('/api/propagation/' + plant.id, {
+          method: 'PATCH',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ status: 'cutting_taken' }),
+        })
+        setPlants((prev) => prev.map((p) => p.id === plant.id ? { ...p, propagation_status: 'cutting_taken' } : p))
+      }
+      setActiveCuttingId(null)
+      toast.success(`Batch ${batchCode} — ${cutCount} cutting${cutCount > 1 ? 's' : ''} recorded`)
+    } catch {
+      toast.error('Failed to save batch')
+    } finally {
+      setSavingBatch(false)
+    }
+  }
 
   const cycleStatus = async (plantId: string) => {
     if (updating.has(plantId)) return
@@ -90,10 +143,15 @@ export function PropagationChecklist({ initialPlants }: { initialPlants: Propaga
             style={{ width: pct + '%' }}
           />
         </div>
-        <div className="flex gap-4 text-xs flex-wrap">
-          <span className="text-green-700 font-medium">{propagated} done</span>
-          <span className="text-amber-700 font-medium">{inProgress} in progress</span>
-          <span className="text-neutral-400">{notStarted} not started</span>
+        <div className="flex items-center justify-between">
+          <div className="flex gap-4 text-xs flex-wrap">
+            <span className="text-green-700 font-medium">{propagated} done</span>
+            <span className="text-amber-700 font-medium">{inProgress} in progress</span>
+            <span className="text-neutral-400">{notStarted} not started</span>
+          </div>
+          <Link href="/propagation/batches" className="text-xs text-rose-500 hover:text-rose-700 font-medium flex items-center gap-1">
+            <ClipboardListIcon className="w-3.5 h-3.5" /> Batches
+          </Link>
         </div>
       </div>
 
@@ -118,6 +176,16 @@ export function PropagationChecklist({ initialPlants }: { initialPlants: Propaga
                 isUpdating={updating.has(plant.id)}
                 onToggle={cycleStatus}
                 isCritical
+                isCuttingOpen={activeCuttingId === plant.id}
+                onCuttingToggle={openCuttingForm}
+                batchCode={batchCode}
+                cutCount={cutCount}
+                cutNotes={cutNotes}
+                savingBatch={savingBatch}
+                onBatchCodeChange={setBatchCode}
+                onCutCountChange={setCutCount}
+                onCutNotesChange={setCutNotes}
+                onSaveBatch={saveBatch}
               />
             ))}
           </div>
@@ -136,6 +204,16 @@ export function PropagationChecklist({ initialPlants }: { initialPlants: Propaga
                 plant={plant}
                 isUpdating={updating.has(plant.id)}
                 onToggle={cycleStatus}
+                isCuttingOpen={activeCuttingId === plant.id}
+                onCuttingToggle={openCuttingForm}
+                batchCode={batchCode}
+                cutCount={cutCount}
+                cutNotes={cutNotes}
+                savingBatch={savingBatch}
+                onBatchCodeChange={setBatchCode}
+                onCutCountChange={setCutCount}
+                onCutNotesChange={setCutNotes}
+                onSaveBatch={saveBatch}
               />
             ))}
           </div>
@@ -146,52 +224,105 @@ export function PropagationChecklist({ initialPlants }: { initialPlants: Propaga
 }
 
 function PlantRow({
-  plant,
-  isUpdating,
-  onToggle,
-  isCritical = false,
+  plant, isUpdating, onToggle, isCritical = false,
+  isCuttingOpen, onCuttingToggle, batchCode, cutCount, cutNotes,
+  savingBatch, onBatchCodeChange, onCutCountChange, onCutNotesChange, onSaveBatch,
 }: {
   plant: PropagationPlant
   isUpdating: boolean
   onToggle: (id: string) => void
   isCritical?: boolean
+  isCuttingOpen: boolean
+  onCuttingToggle: (plant: PropagationPlant) => void
+  batchCode: string
+  cutCount: number
+  cutNotes: string
+  savingBatch: boolean
+  onBatchCodeChange: (v: string) => void
+  onCutCountChange: (v: number) => void
+  onCutNotesChange: (v: string) => void
+  onSaveBatch: (plant: PropagationPlant) => void
 }) {
   const config = STATUS_CONFIG[plant.propagation_status]
   const Icon = isUpdating ? Loader2 : config.icon
   const done = plant.propagation_status === 'propagated'
 
   return (
-    <button
-      onClick={() => onToggle(plant.id)}
-      disabled={isUpdating}
-      className={[
-        'w-full flex items-center gap-3 p-3.5 rounded-xl border bg-white',
-        'active:scale-[0.98] transition-transform text-left select-none',
-        isCritical && !done ? 'border-red-200 bg-red-50/40' : 'border-neutral-200',
-        done ? 'opacity-60' : '',
-      ]
-        .filter(Boolean)
-        .join(' ')}
-    >
-      <span className={'flex-shrink-0 p-1.5 rounded-lg ' + config.colorClass}>
-        <Icon className={'w-4 h-4' + (isUpdating ? ' animate-spin' : '')} />
-      </span>
-      <div className="flex-1 min-w-0">
-        <p
-          className={
-            'text-sm font-medium truncate ' +
-            (done ? 'line-through text-neutral-400' : 'text-neutral-800')
-          }
+    <div className={[
+      'rounded-xl border bg-white overflow-hidden',
+      isCritical && !done ? 'border-red-200' : 'border-neutral-200',
+    ].filter(Boolean).join(' ')}>
+      <div className="flex items-center gap-3 p-3.5">
+        <button
+          onClick={() => onToggle(plant.id)}
+          disabled={isUpdating}
+          className="flex items-center gap-3 flex-1 min-w-0 text-left active:scale-[0.98] transition-transform select-none"
         >
-          {plant.label_name}
-        </p>
-        <p className="text-xs text-neutral-400 truncate">
-          {plant.canonical_name} &middot; {plant.garden_name ?? 'Unassigned'}
-        </p>
+          <span className={'flex-shrink-0 p-1.5 rounded-lg ' + config.colorClass}>
+            <Icon className={'w-4 h-4' + (isUpdating ? ' animate-spin' : '')} />
+          </span>
+          <div className="flex-1 min-w-0">
+            <p className={'text-sm font-medium truncate ' + (done ? 'line-through text-neutral-400' : 'text-neutral-800')}>
+              {plant.label_name}
+            </p>
+            <p className="text-xs text-neutral-400 truncate">
+              {plant.canonical_name} &middot; {plant.garden_name ?? 'Unassigned'}
+            </p>
+          </div>
+          <span className={'flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ' + config.colorClass}>
+            {config.label}
+          </span>
+        </button>
+        <button
+          onClick={() => onCuttingToggle(plant)}
+          title="Log cuttings batch"
+          className={'flex-shrink-0 p-2 rounded-lg transition-colors ' + (isCuttingOpen ? 'bg-amber-100 text-amber-700' : 'text-neutral-300 hover:text-amber-600 hover:bg-amber-50')}
+        >
+          <Scissors className="w-4 h-4" />
+        </button>
       </div>
-      <span className={'flex-shrink-0 text-xs font-medium px-2.5 py-1 rounded-full ' + config.colorClass}>
-        {config.label}
-      </span>
-    </button>
+
+      {isCuttingOpen && (
+        <div className="border-t bg-amber-50/60 p-3 space-y-2">
+          <p className="text-xs font-semibold text-amber-800 uppercase tracking-wide">Log cutting batch</p>
+          <div className="flex gap-2">
+            <div className="flex-1">
+              <label className="text-xs text-neutral-500">Batch code</label>
+              <input
+                type="text"
+                value={batchCode}
+                onChange={(e) => onBatchCodeChange(e.target.value)}
+                placeholder="e.g. VOO-0708"
+                className="mt-0.5 w-full px-2.5 py-1.5 border rounded-lg text-sm font-mono outline-none focus:ring-1 focus:ring-amber-400 bg-white"
+              />
+            </div>
+            <div className="w-20">
+              <label className="text-xs text-neutral-500">Count</label>
+              <input
+                type="number"
+                min="1"
+                value={cutCount}
+                onChange={(e) => onCutCountChange(Math.max(1, parseInt(e.target.value) || 1))}
+                className="mt-0.5 w-full text-center px-2 py-1.5 border rounded-lg text-sm outline-none focus:ring-1 focus:ring-amber-400 bg-white"
+              />
+            </div>
+          </div>
+          <input
+            type="text"
+            value={cutNotes}
+            onChange={(e) => onCutNotesChange(e.target.value)}
+            placeholder="Notes (optional)…"
+            className="w-full px-2.5 py-1.5 border rounded-lg text-xs outline-none focus:ring-1 focus:ring-amber-400 bg-white"
+          />
+          <button
+            onClick={() => onSaveBatch(plant)}
+            disabled={savingBatch || !batchCode.trim()}
+            className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-semibold py-2.5 rounded-lg transition-colors"
+          >
+            {savingBatch ? 'Saving…' : `Record batch — ${cutCount} cutting${cutCount > 1 ? 's' : ''}`}
+          </button>
+        </div>
+      )}
+    </div>
   )
 }

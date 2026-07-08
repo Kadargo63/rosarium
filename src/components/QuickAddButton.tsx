@@ -1,12 +1,13 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { PlusIcon, XIcon, SearchIcon, CheckIcon, ExternalLinkIcon } from 'lucide-react'
+import { XIcon, SearchIcon, CheckIcon, ExternalLinkIcon, PlusIcon } from 'lucide-react'
 import { getSupabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import type { RoseEntity, Garden, PropagationStatus } from '@/types/schema'
-import { COLOR_CODE_LABELS, GROWTH_TYPE_LABELS } from '@/constants'
+import { COLOR_CODE_LABELS } from '@/constants'
 import Link from 'next/link'
+import { useRosariumStore } from '@/store/useStore'
 
 interface PendingPlant {
   rose: RoseEntity
@@ -16,7 +17,8 @@ interface PendingPlant {
 
 export function QuickAddButton() {
   const router = useRouter()
-  const [open, setOpen] = useState(false)
+  const open = useRosariumStore((s) => s.quickAddOpen)
+  const closeStore = useRosariumStore((s) => s.closeQuickAdd)
   const [roses, setRoses] = useState<RoseEntity[]>([])
   const [gardens, setGardens] = useState<Garden[]>([])
   const [query, setQuery] = useState('')
@@ -38,10 +40,10 @@ export function QuickAddButton() {
   }, [open])
 
   const close = useCallback(() => {
-    setOpen(false)
+    closeStore()
     setQuery('')
     setPending([])
-  }, [])
+  }, [closeStore])
 
   const filtered = query.length < 1
     ? []
@@ -101,16 +103,7 @@ export function QuickAddButton() {
 
   return (
     <>
-      {/* Floating button — above bottom nav on mobile */}
-      <button
-        onClick={() => setOpen(true)}
-        aria-label="Quick add plant"
-        className="fixed bottom-[4.5rem] right-4 md:bottom-6 z-40 w-14 h-14 bg-rose-600 hover:bg-rose-700 text-white rounded-full shadow-xl flex items-center justify-center active:scale-95 transition-transform"
-      >
-        <PlusIcon className="w-7 h-7" strokeWidth={2.5} />
-      </button>
-
-      {/* Backdrop + sheet */}
+      {/* Backdrop + sheet — triggered by store/BottomNav */}
       {open && (
         <div className="fixed inset-0 z-50 flex items-end md:items-center justify-center">
           <div className="absolute inset-0 bg-black/50" onClick={close} />

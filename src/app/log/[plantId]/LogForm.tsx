@@ -14,6 +14,8 @@ import type { BloomStage } from '@/types/schema'
 
 export function LogForm({ plantId }: { plantId: string }) {
   const router = useRouter()
+  const today = new Date().toISOString().split('T')[0] as string
+  const [logDate, setLogDate] = useState(today)
   const [vigor, setVigor] = useState(3)
   const [health, setHealth] = useState(3)
   const [stemQuality, setStemQuality] = useState(3)
@@ -28,7 +30,7 @@ export function LogForm({ plantId }: { plantId: string }) {
     try {
       const log = await createLog({
         plant_id: plantId,
-        date: new Date().toISOString().split('T')[0] as string,
+        date: logDate,
         vigor,
         health,
         stem_quality: stemQuality,
@@ -56,6 +58,16 @@ export function LogForm({ plantId }: { plantId: string }) {
 
   return (
     <form onSubmit={onSubmit} className="space-y-5">
+      <div>
+        <Label>Date</Label>
+        <input
+          type="date"
+          value={logDate}
+          max={today}
+          onChange={(e) => setLogDate(e.target.value)}
+          className="mt-1 w-full px-3 py-2 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400"
+        />
+      </div>
       <div>
         <Label>Vigor <span className="text-rose-500 font-bold ml-1">{vigor}/5</span></Label>
         <Slider min={1} max={5} step={1} value={[vigor]} onValueChange={(v) => setVigor(Array.isArray(v) ? (v[0] ?? 3) : (v as number))} className="mt-2" />
