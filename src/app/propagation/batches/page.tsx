@@ -6,7 +6,8 @@ import { ArrowLeftIcon } from 'lucide-react'
 import { BatchDashboard } from './BatchDashboard'
 
 export default async function BatchesPage() {
-  const batches = await getActiveBatches() as Record<string, unknown>[]
+  // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  const batches = await getActiveBatches() as any[]
   return (
     <div className="space-y-4 max-w-2xl">
       <div>
