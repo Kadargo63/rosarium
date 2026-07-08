@@ -14,9 +14,6 @@ const nextConfig = {
       { protocol: 'https', hostname: '*.supabase.co' },
     ],
   },
-  experimental: {
-    allowedDevOrigins: ['192.168.0.117'],
-  },
 }
 
 module.exports = withPWA(nextConfig)
