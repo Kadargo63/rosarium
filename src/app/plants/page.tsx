@@ -4,6 +4,7 @@ import { getPlants, getGardens } from '@/lib/queries'
 import { PlantCard } from '@/components/PlantCard'
 import Link from 'next/link'
 import { GROWTH_TYPE_LABELS } from '@/constants'
+import { MapPinIcon } from 'lucide-react'
 import type { GrowthType } from '@/types/schema'
 
 const GROWTH_ORDER: GrowthType[] = [
@@ -53,6 +54,9 @@ export default async function PlantsPage({
       <div className="flex items-center justify-between gap-3">
         <h1 className="text-xl font-bold text-rose-900">Plant Inventory</h1>
         <div className="flex items-center gap-2">
+          <Link href="/gardens" className="flex items-center gap-1 text-xs text-neutral-500 hover:text-neutral-700 px-2 py-1.5 rounded-lg hover:bg-neutral-100 transition-colors">
+            <MapPinIcon className="w-3.5 h-3.5" /> Manage locations
+          </Link>
           <div className="flex gap-1">
             {viewBtn('/plants?view=garden', 'By Location', view === 'garden')}
             {viewBtn('/plants?view=type', 'By Type', view === 'type')}

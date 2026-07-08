@@ -18,7 +18,7 @@ Last updated: 2026-07-08
 | 8 | Bloom Prediction / Analytics expansion | Medium | 🔲 Needs more log data |
 | 9 | Offline / Service Worker | Medium | ✅ Done — `@ducanh2912/next-pwa`, `/offline` fallback page |
 | 10 | Group plants by growth form | Small | ✅ Done — By Location / By Type toggle on plants page |
-| 11 | Add/edit garden locations from app UI | Small–Medium | 🔲 Backlog — currently only via SQL seed |
+| 11 | Add/edit garden locations from app UI | Small–Medium | ✅ Done — `/gardens` page, full CRUD with plant counts |
 
 ---
 

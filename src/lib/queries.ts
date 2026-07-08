@@ -120,6 +120,20 @@ export async function getGardens(): Promise<Garden[]> {
   return data ?? []
 }
 
+export async function getGardensWithCounts(): Promise<(Garden & { plant_count: number })[]> {
+  const [{ data: gardens, error: gErr }, { data: plants, error: pErr }] = await Promise.all([
+    supabase.from('gardens').select('*').order('name'),
+    supabase.from('plants').select('garden_id'),
+  ])
+  if (gErr) throw gErr
+  if (pErr) throw pErr
+  const counts: Record<string, number> = {}
+  for (const p of plants ?? []) {
+    if (p.garden_id) counts[p.garden_id] = (counts[p.garden_id] ?? 0) + 1
+  }
+  return (gardens ?? []).map((g) => ({ ...g, plant_count: counts[g.id] ?? 0 }))
+}
+
 // ── Propagation Batches ────────────────────────────────────────────────────
 
 export async function createPropagationBatch(batch: {
