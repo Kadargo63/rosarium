@@ -21,6 +21,7 @@ export function QuickAddButton() {
   const closeStore = useRosariumStore((s) => s.closeQuickAdd)
   const [roses, setRoses] = useState<RoseEntity[]>([])
   const [gardens, setGardens] = useState<Garden[]>([])
+  const [loadingCatalog, setLoadingCatalog] = useState(false)
   const [query, setQuery] = useState('')
   const [pending, setPending] = useState<PendingPlant[]>([])
   const [saving, setSaving] = useState(false)
@@ -28,14 +29,17 @@ export function QuickAddButton() {
 
   useEffect(() => {
     if (!open) return
+    setLoadingCatalog(true)
     const supabase = getSupabase()
     Promise.all([
       supabase.from('rose_entities').select('*').order('canonical_name'),
       supabase.from('gardens').select('*').order('name'),
-    ]).then(([{ data: r }, { data: g }]) => {
+    ]).then(([{ data: r, error: rErr }, { data: g }]) => {
+      if (rErr) { toast.error('Could not load rose catalog'); return }
       if (r) setRoses(r as RoseEntity[])
       if (g) setGardens(g as Garden[])
-    })
+    }).catch(() => toast.error('Could not load rose catalog'))
+      .finally(() => setLoadingCatalog(false))
     setTimeout(() => inputRef.current?.focus(), 150)
   }, [open])
 
@@ -129,7 +133,8 @@ export function QuickAddButton() {
                 <input
                   ref={inputRef}
                   type="text"
-                  placeholder="Search by name or breeder code…"
+                  placeholder={loadingCatalog ? 'Loading catalog…' : `Search ${roses.length} roses by name or breeder…`}
+                  disabled={loadingCatalog}
                   value={query}
                   onChange={e => setQuery(e.target.value)}
                   className="w-full pl-9 pr-4 py-2.5 border rounded-lg text-sm outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400"
