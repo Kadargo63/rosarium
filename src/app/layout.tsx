@@ -4,6 +4,7 @@ import './globals.css'
 import { Toaster } from '@/components/ui/sonner'
 import { BottomNav } from '@/components/BottomNav'
 import { SideNav } from '@/components/SideNav'
+import { QuickAddButton } from '@/components/QuickAddButton'
 
 const inter = Inter({ subsets: ['latin'] })
 
@@ -25,6 +26,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
           </main>
         </div>
         <BottomNav />
+        <QuickAddButton />
         <Toaster richColors position="top-center" />
       </body>
     </html>

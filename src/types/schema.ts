@@ -19,6 +19,7 @@ export interface RoseEntity {
   year_introduced: number | null
   species: string | null
   notes: string | null
+  country_of_origin: string | null
   created_at: string
 }
 
