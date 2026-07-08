@@ -94,6 +94,7 @@ export function QuickAddButton() {
       if (!res.ok) throw new Error(json.error ?? 'HTTP ' + res.status)
       toast.success(`Added ${rows.length} plant${rows.length > 1 ? 's' : ''} — tap any to edit details`)
       close()
+      router.refresh()
       router.push('/plants')
     } catch { toast.error('Failed to save — check your connection') } finally { setSaving(false) }
   }
