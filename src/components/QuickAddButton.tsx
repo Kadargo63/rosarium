@@ -5,7 +5,7 @@ import { XIcon, SearchIcon, CheckIcon, ListIcon, SearchCheckIcon } from 'lucide-
 import { getSupabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import type { RoseEntity, Garden, PropagationStatus } from '@/types/schema'
-import { COLOR_CODE_LABELS, GROWTH_TYPE_LABELS } from '@/constants'
+import { COLOR_CODE_LABELS, BREEDER_NAMES } from '@/constants'
 import { useRosariumStore } from '@/store/useStore'
 
 export function QuickAddButton() {
@@ -96,8 +96,10 @@ export function QuickAddButton() {
     } catch { toast.error('Failed to save') } finally { setSaving(false) }
   }
 
-  const metaLine = (r: RoseEntity) =>
-    [r.class_code, r.breeder_code, r.year_introduced, r.country_of_origin].filter(Boolean).join(' · ')
+  const metaLine = (r: RoseEntity) => {
+    const breeder = r.breeder_code ? (BREEDER_NAMES[r.breeder_code]?.name ?? r.breeder_code) : null
+    return [r.class_code, breeder, r.year_introduced, r.country_of_origin].filter(Boolean).join(' · ')
+  }
 
   const CLASS_OPTIONS = [
     { v: 'HT', label: 'Hybrid Tea', growth: 'hybrid_tea', pruning: 'NEW_GROWTH_DOMINANT' },

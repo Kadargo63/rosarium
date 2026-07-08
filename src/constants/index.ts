@@ -64,3 +64,38 @@ export const PRUNING_MODEL_COLORS: Record<PruningModel, string> = {
   MIXED_CANE: 'bg-yellow-100 text-yellow-800',
   OLD_WOOD_SENSITIVE: 'bg-orange-100 text-orange-800',
 }
+
+export const BREEDER_NAMES: Record<string, { name: string; country: string }> = {
+  // United States
+  JAC:  { name: 'Jackson & Perkins',   country: 'USA' },
+  WEK:  { name: 'Weeks Roses',          country: 'USA' },
+  RAD:  { name: 'Radler / Knock Out',   country: 'USA' },
+  ARO:  { name: 'Armstrong Roses',      country: 'USA' },
+  BUC:  { name: 'Griffith Buck',        country: 'USA' },
+  MOO:  { name: 'Ralph Moore',          country: 'USA' },
+  SAV:  { name: 'Harmon Saville',       country: 'USA' },
+  SP:   { name: 'Spring Hill Nurseries',country: 'USA' },
+  MIN:  { name: 'Miniature Roses Inc.', country: 'USA' },
+  // Germany
+  KOR:  { name: 'W. Kordes & Sons',     country: 'Germany' },
+  TAN:  { name: 'Mathias Tantau',       country: 'Germany' },
+  // France
+  MEI:  { name: 'Meilland International', country: 'France' },
+  DEL:  { name: 'Delbard',              country: 'France' },
+  // England
+  AUS:  { name: 'David Austin Roses',   country: 'England' },
+  HAR:  { name: 'R. Harkness & Co.',    country: 'England' },
+  FRY:  { name: "Fryer's Roses",        country: 'England' },
+  CAR:  { name: 'Cants of Colchester',  country: 'England' },
+  SCR:  { name: 'Scrivens',             country: 'England' },
+  // Northern Ireland / Scotland
+  DIC:  { name: 'Dickson Nurseries',    country: 'Northern Ireland' },
+  COC:  { name: "Cocker's Roses",       country: 'Scotland' },
+  McG:  { name: 'Sam McGredy',          country: 'New Zealand' },
+  MCG:  { name: 'Sam McGredy',          country: 'New Zealand' },
+  // Netherlands / Denmark
+  HOR:  { name: 'De Ruiter / Interplant', country: 'Netherlands' },
+  POE:  { name: 'Poulsen Roser',        country: 'Denmark' },
+  // Other
+  DEF:  { name: 'De Vink',              country: 'Netherlands' },
+}

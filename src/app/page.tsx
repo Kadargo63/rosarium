@@ -5,6 +5,7 @@ import { getNeedsAttention, getTopPerformers } from '@/lib/analytics'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { PhoneQR } from '@/components/PhoneQR'
+import { InstallButton } from '@/components/InstallButton'
 import Link from 'next/link'
 
 export default async function DashboardPage() {
@@ -27,6 +28,7 @@ export default async function DashboardPage() {
         <div>
           <h1 className="text-2xl font-bold text-rose-900">Rosarium</h1>
           <p className="text-neutral-500 text-sm mt-1">Your rose intelligence system</p>
+          <InstallButton />
         </div>
         <div className="hidden md:block flex-shrink-0">
           <PhoneQR />
