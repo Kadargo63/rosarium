@@ -173,7 +173,7 @@ export function GardenManager({ initialGardens }: { initialGardens: Garden[] }) 
                 <div className="mt-3 p-3 bg-red-50 border border-red-200 rounded-lg space-y-2">
                   <p className="text-xs text-red-700 font-medium">
                     Delete &ldquo;{g.name}&rdquo;?
-                    {g.plant_count > 0 &&   plant will move to Unassigned.}
+                    {g.plant_count > 0 && ` ${g.plant_count} plant${g.plant_count > 1 ? 's' : ''} will move to Unassigned.`}
                   </p>
                   <div className="flex gap-2">
                     <button onClick={() => confirmDelete(g.id)} disabled={saving} className="flex-1 bg-red-600 hover:bg-red-700 disabled:opacity-60 text-white text-xs font-medium py-2 rounded-lg">
