@@ -129,7 +129,7 @@ export function QuickAddButton() {
       }).select().single()
       if (error) throw error
       setRoses(prev => [...prev, data as RoseEntity].sort((a, b) => a.canonical_name.localeCompare(b.canonical_name)))
-      setSelected(prev => new Set([...prev, (data as RoseEntity).id]))
+      setSelected(prev => new Set([...Array.from(prev), (data as RoseEntity).id]))
       setShowCreate(false)
       setCreateForm({ class_code: 'HT', color_code: 'mp', breeder_code: '', year: '', country: '' })
       toast.success(`"${query}" added to catalog and selected`)
