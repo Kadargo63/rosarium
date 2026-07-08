@@ -27,3 +27,11 @@ update rose_entities set country_of_origin = 'Germany'          where canonical_
 update rose_entities set country_of_origin = 'United States'    where canonical_name = 'Henry Fonda';
 update rose_entities set country_of_origin = 'United States'    where canonical_name = 'Perfume Delight';
 update rose_entities set country_of_origin = 'United States'    where canonical_name = 'Royal American';
+
+-- Remaining original seed roses
+update rose_entities set country_of_origin = 'United States'    where canonical_name = 'True Spirit';
+update rose_entities set country_of_origin = 'United States'    where canonical_name = 'True Serenity';
+update rose_entities set country_of_origin = 'United States'    where canonical_name = 'True Passion';
+update rose_entities set country_of_origin = 'United States'    where canonical_name = 'Martha Stewart';
+update rose_entities set country_of_origin = 'United States'    where canonical_name = 'New Day';
+update rose_entities set country_of_origin = 'United States'    where canonical_name = 'Tropical Lightning';
