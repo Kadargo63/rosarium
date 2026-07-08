@@ -1,7 +1,7 @@
 'use client'
 import dynamic from 'next/dynamic'
 import type { PlantWithDetails, AnalyticsData } from '@/types/schema'
-import { GROWTH_TYPE_LABELS, BREEDER_NAMES, COLOR_CODE_LABELS } from '@/constants'
+import { GROWTH_TYPE_LABELS, BREEDER_NAMES } from '@/constants'
 
 const Plot = dynamic(() => import('react-plotly.js'), { ssr: false, loading: () => <div className="h-64 bg-neutral-100 rounded-xl animate-pulse" /> })
 

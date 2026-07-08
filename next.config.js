@@ -6,6 +6,9 @@ const withPWA = require('@ducanh2912/next-pwa').default({
   aggressiveFrontEndNavCaching: false,
   reloadOnOnline: true,
   fallbacks: { document: '/offline' },
+  workboxOptions: {
+    maximumFileSizeToCacheInBytes: 6 * 1024 * 1024, // 6MB — needed for plotly.js
+  },
 })
 
 const nextConfig = {
