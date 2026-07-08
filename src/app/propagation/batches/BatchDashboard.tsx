@@ -1,6 +1,5 @@
 'use client'
 import { useState } from 'react'
-import { getSupabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { CheckCircle2Icon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 
@@ -39,15 +38,18 @@ export function BatchDashboard({ initialBatches }: { initialBatches: Batch[] }) 
     setUpdatingId(batchId)
     try {
       const today = new Date().toISOString().split('T')[0]
-      const supabase = getSupabase()
-      await supabase.from('propagation_batch_updates').insert({
-        batch_id: batchId,
-        update_date: today,
-        viable_count: form.viable ? parseInt(form.viable) : null,
-        failed_count: form.failed ? parseInt(form.failed) : null,
-        rooted_count: form.rooted ? parseInt(form.rooted) : null,
-        notes: form.notes.trim() || null,
+      const res = await fetch('/api/batches/' + batchId, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          update_date: today,
+          viable_count: form.viable ? parseInt(form.viable) : null,
+          failed_count: form.failed ? parseInt(form.failed) : null,
+          rooted_count: form.rooted ? parseInt(form.rooted) : null,
+          notes: form.notes.trim() || null,
+        }),
       })
+      if (!res.ok) throw new Error('Failed')
       setBatches(prev => prev.map(b => b.id !== batchId ? b : {
         ...b,
         propagation_batch_updates: [
@@ -64,7 +66,12 @@ export function BatchDashboard({ initialBatches }: { initialBatches: Batch[] }) 
 
   const markComplete = async (batchId: string) => {
     try {
-      await getSupabase().from('propagation_batches').update({ status: 'complete' }).eq('id', batchId)
+      const res = await fetch('/api/batches/' + batchId, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ status: 'complete' }),
+      })
+      if (!res.ok) throw new Error('Failed')
       setBatches(prev => prev.filter(b => b.id !== batchId))
       toast.success('Batch marked complete')
     } catch { toast.error('Failed') }

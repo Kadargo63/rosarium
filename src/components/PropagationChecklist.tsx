@@ -1,7 +1,6 @@
 'use client'
 import { useState } from 'react'
 import { Scissors, CheckCircle2, Circle, Loader2, ClipboardListIcon } from 'lucide-react'
-import { getSupabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import Link from 'next/link'
 import type { PropagationStatus } from '@/types/schema'
@@ -59,15 +58,19 @@ export function PropagationChecklist({
     if (!batchCode.trim()) return
     setSavingBatch(true)
     try {
-      const supabase = getSupabase()
-      await supabase.from('propagation_batches').insert({
-        parent_plant_id: plant.id,
-        batch_code: batchCode.trim(),
-        date_taken: new Date().toISOString().split('T')[0],
-        initial_count: cutCount,
-        notes: cutNotes.trim() || null,
-        status: 'active',
+      const res = await fetch('/api/batches', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          parent_plant_id: plant.id,
+          batch_code: batchCode.trim(),
+          date_taken: new Date().toISOString().split('T')[0],
+          initial_count: cutCount,
+          notes: cutNotes.trim() || null,
+          status: 'active',
+        }),
       })
+      if (!res.ok) throw new Error('Failed')
       if (plant.propagation_status === 'none') {
         await fetch('/api/propagation/' + plant.id, {
           method: 'PATCH',
@@ -261,16 +264,20 @@ export function PropagationChecklist({
                 if (!orphanLabel.trim() || !batchCode.trim()) return
                 setSavingBatch(true)
                 try {
-                  const supabase = getSupabase()
-                  await supabase.from('propagation_batches').insert({
-                    parent_plant_id: null,
-                    batch_label: orphanLabel.trim(),
-                    batch_code: batchCode.trim(),
-                    date_taken: new Date().toISOString().split('T')[0],
-                    initial_count: cutCount,
-                    notes: cutNotes.trim() || null,
-                    status: 'active',
+                  const res = await fetch('/api/batches', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                      parent_plant_id: null,
+                      batch_label: orphanLabel.trim(),
+                      batch_code: batchCode.trim(),
+                      date_taken: new Date().toISOString().split('T')[0],
+                      initial_count: cutCount,
+                      notes: cutNotes.trim() || null,
+                      status: 'active',
+                    }),
                   })
+                  if (!res.ok) throw new Error('Failed')
                   setShowOrphanForm(false)
                   setOrphanLabel('')
                   setBatchCode('')

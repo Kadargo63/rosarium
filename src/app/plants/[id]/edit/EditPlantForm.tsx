@@ -1,7 +1,6 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { Label } from '@/components/ui/label'
 import { Input } from '@/components/ui/input'
@@ -25,17 +24,18 @@ export function EditPlantForm({ plant, gardens }: { plant: PlantWithDetails; gar
     if (!label.trim()) { toast.error('Label is required'); return }
     setSaving(true)
     try {
-      const { error } = await getSupabase()
-        .from('plants')
-        .update({
+      const res = await fetch('/api/plants/' + plant.id, {
+        method: 'PATCH',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
           label_name: label.trim(),
           garden_id: gardenId || null,
           date_planted: datePlanted || null,
           notes: notes.trim() || null,
           sun_index: sunIndex || null,
-        })
-        .eq('id', plant.id)
-      if (error) throw error
+        }),
+      })
+      if (!res.ok) throw new Error('Failed')
       toast.success('Plant updated')
       router.push('/plants/' + plant.id)
       router.refresh()
@@ -45,8 +45,8 @@ export function EditPlantForm({ plant, gardens }: { plant: PlantWithDetails; gar
   const deletePlant = async () => {
     setDeleting(true)
     try {
-      const { error } = await getSupabase().from('plants').delete().eq('id', plant.id)
-      if (error) throw error
+      const res = await fetch('/api/plants/' + plant.id, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed')
       toast.success('Plant removed')
       router.push('/plants')
       router.refresh()

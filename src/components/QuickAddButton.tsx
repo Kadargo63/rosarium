@@ -73,7 +73,6 @@ export function QuickAddButton() {
     if (!selected.size) return
     setSaving(true)
     try {
-      const supabase = getSupabase()
       const rows = Array.from(selected).map(id => {
         const rose = roses.find(r => r.id === id)!
         return {
@@ -88,12 +87,16 @@ export function QuickAddButton() {
           user_id: null,
         }
       })
-      const { error } = await supabase.from('plants').insert(rows)
-      if (error) throw error
+      const res = await fetch('/api/plants', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(rows),
+      })
+      if (!res.ok) throw new Error('Failed')
       toast.success(`Added ${rows.length} plant${rows.length > 1 ? 's' : ''} — tap any to edit details`)
       router.refresh()
       close()
-    } catch { toast.error('Failed to save') } finally { setSaving(false) }
+    } catch { toast.error('Failed to save — check your connection') } finally { setSaving(false) }
   }
 
   const metaLine = (r: RoseEntity) => {
@@ -116,20 +119,24 @@ export function QuickAddButton() {
     setCreating(true)
     try {
       const cls = CLASS_OPTIONS.find(c => c.v === createForm.class_code) ?? CLASS_OPTIONS[0]!
-      const supabase = getSupabase()
-      const { data, error } = await supabase.from('rose_entities').insert({
-        canonical_name: query.trim(),
-        class_code: cls.v,
-        color_code: createForm.color_code || null,
-        breeder_code: createForm.breeder_code.trim() || null,
-        year_introduced: createForm.year ? parseInt(createForm.year) : null,
-        country_of_origin: createForm.country.trim() || null,
-        growth_type: cls.growth,
-        pruning_model: cls.pruning,
-        plant_structure_type: cls.growth === 'climber' ? 'vine_runner' : 'cane',
-        species: 'Rosa x hybrida',
-      }).select().single()
-      if (error) throw error
+      const res = await fetch('/api/roses', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          canonical_name: query.trim(),
+          class_code: cls.v,
+          color_code: createForm.color_code || null,
+          breeder_code: createForm.breeder_code.trim() || null,
+          year_introduced: createForm.year ? parseInt(createForm.year) : null,
+          country_of_origin: createForm.country.trim() || null,
+          growth_type: cls.growth,
+          pruning_model: cls.pruning,
+          plant_structure_type: cls.growth === 'climber' ? 'vine_runner' : 'cane',
+          species: 'Rosa x hybrida',
+        }),
+      })
+      const { data, error } = await res.json()
+      if (error) throw new Error(error)
       setRoses(prev => [...prev, data as RoseEntity].sort((a, b) => a.canonical_name.localeCompare(b.canonical_name)))
       setSelected(prev => new Set([...Array.from(prev), (data as RoseEntity).id]))
       setShowCreate(false)

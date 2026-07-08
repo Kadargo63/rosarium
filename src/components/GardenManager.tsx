@@ -1,7 +1,6 @@
 'use client'
 import { useState } from 'react'
 import { useRouter } from 'next/navigation'
-import { getSupabase } from '@/lib/supabase'
 import { toast } from 'sonner'
 import { PlusIcon, PencilIcon, TrashIcon, CheckIcon, XIcon, MapPinIcon } from 'lucide-react'
 import type { SunIndex } from '@/types/schema'
@@ -96,16 +95,16 @@ export function GardenManager({ initialGardens }: { initialGardens: Garden[] }) 
     setSaving(true)
     try {
       const payload = { name: form.name.trim(), description: form.description.trim() || null, location_notes: form.location_notes.trim() || null, sun_index: form.sun_index || null, user_id: null }
-      const supabase = getSupabase()
       if (isNew) {
-        const { data, error } = await supabase.from('gardens').insert(payload).select().single()
-        if (error) throw error
+        const res = await fetch('/api/gardens', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        const { data, error } = await res.json()
+        if (error) throw new Error(error)
         setGardens(prev => [...prev, { ...(data as Garden), plant_count: 0 }].sort((a, b) => a.name.localeCompare(b.name)))
         setShowAdd(false)
         toast.success('Garden added')
       } else {
-        const { error } = await supabase.from('gardens').update(payload).eq('id', editId!)
-        if (error) throw error
+        const res = await fetch('/api/gardens/' + editId, { method: 'PATCH', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify(payload) })
+        if (!res.ok) throw new Error('Failed')
         setGardens(prev => prev.map(g => g.id === editId ? { ...g, ...payload, sun_index: payload.sun_index as SunIndex | null } : g).sort((a, b) => a.name.localeCompare(b.name)))
         setEditId(null)
         toast.success('Garden updated')
@@ -118,9 +117,8 @@ export function GardenManager({ initialGardens }: { initialGardens: Garden[] }) 
   const confirmDelete = async (id: string) => {
     setSaving(true)
     try {
-      const supabase = getSupabase()
-      await supabase.from('plants').update({ garden_id: null }).eq('garden_id', id)
-      await supabase.from('gardens').delete().eq('id', id)
+      const res = await fetch('/api/gardens/' + id, { method: 'DELETE' })
+      if (!res.ok) throw new Error('Failed')
       setGardens(prev => prev.filter(g => g.id !== id))
       setDeleteId(null)
       toast.success('Garden removed — plants moved to Unassigned')
