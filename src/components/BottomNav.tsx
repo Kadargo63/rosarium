@@ -21,7 +21,7 @@ export function BottomNav() {
   return (
     <nav className="fixed bottom-0 left-0 right-0 bg-white border-t md:hidden z-50">
       <div className="flex items-end">
-        {navLinks.map((item, i) => {
+        {navLinks.map((item) => {
           if (!item) {
             return (
               <button key="fab" onClick={openQuickAdd}

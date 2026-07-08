@@ -2,7 +2,7 @@
 import { useState } from 'react'
 import { getSupabase } from '@/lib/supabase'
 import { toast } from 'sonner'
-import { CheckCircle2Icon, XCircleIcon, SproutIcon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
+import { CheckCircle2Icon, ChevronDownIcon, ChevronUpIcon } from 'lucide-react'
 
 interface Batch {
   id: string
