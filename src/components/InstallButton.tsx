@@ -2,8 +2,13 @@
 import { useState, useEffect } from 'react'
 import { SmartphoneIcon, XIcon } from 'lucide-react'
 
+interface BeforeInstallPromptEvent extends Event {
+  prompt(): void
+  userChoice: Promise<{ outcome: 'accepted' | 'dismissed' }>
+}
+
 export function InstallButton() {
-  const [prompt, setPrompt] = useState<{ prompt: () => void; userChoice: Promise<{ outcome: string }> } | null>(null)
+  const [prompt, setPrompt] = useState<BeforeInstallPromptEvent | null>(null)
   const [isIOS, setIsIOS] = useState(false)
   const [showTip, setShowTip] = useState(false)
   const [installed, setInstalled] = useState(false)
@@ -13,7 +18,7 @@ export function InstallButton() {
     if (window.matchMedia('(display-mode: standalone)').matches) { setInstalled(true); return }
     const ios = /iPad|iPhone|iPod/.test(navigator.userAgent)
     setIsIOS(ios)
-    const handler = (e: Event) => { e.preventDefault(); setPrompt(e as any) }
+    const handler = (e: Event) => { e.preventDefault(); setPrompt(e as BeforeInstallPromptEvent) }
     window.addEventListener('beforeinstallprompt', handler)
     return () => window.removeEventListener('beforeinstallprompt', handler)
   }, [])

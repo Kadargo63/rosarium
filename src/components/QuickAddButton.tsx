@@ -1,10 +1,9 @@
 'use client'
 import { useState, useEffect, useRef, useCallback } from 'react'
 import { useRouter } from 'next/navigation'
-import { XIcon, SearchIcon, CheckIcon, ListIcon, SearchCheckIcon } from 'lucide-react'
-import { getSupabase } from '@/lib/supabase'
+import { XIcon, SearchIcon, CheckIcon } from 'lucide-react'
 import { toast } from 'sonner'
-import type { RoseEntity, Garden, PropagationStatus } from '@/types/schema'
+import type { RoseEntity, Garden } from '@/types/schema'
 import { COLOR_CODE_LABELS, BREEDER_NAMES } from '@/constants'
 import { useRosariumStore } from '@/store/useStore'
 
@@ -61,7 +60,7 @@ export function QuickAddButton() {
   const toggle = (id: string) => {
     setSelected(prev => {
       const s = new Set(prev)
-      s.has(id) ? s.delete(id) : s.add(id)
+      if (s.has(id)) { s.delete(id) } else { s.add(id) }
       return s
     })
   }
