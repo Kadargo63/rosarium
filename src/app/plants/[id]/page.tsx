@@ -2,7 +2,7 @@ export const dynamic = 'force-dynamic'
 
 import { notFound } from 'next/navigation'
 import Link from 'next/link'
-import { ArrowLeftIcon } from 'lucide-react'
+import { ArrowLeftIcon, PencilIcon, ScissorsIcon } from 'lucide-react'
 import { getPlant, getLogsByPlant, getPhotosByPlant, getFeedbackByPlant } from '@/lib/queries'
 import { LogTimeline } from '@/components/LogTimeline'
 import { PhotoGallery } from '@/components/PhotoGallery'
@@ -39,7 +39,19 @@ export default async function PlantDetailPage({ params }: { params: { id: string
             )}
             {plant.garden && <p className="text-xs text-neutral-400 mt-0.5">{plant.garden.name}</p>}
           </div>
-          <ShareButton plant={plant} />
+          <div className="flex items-center gap-2 flex-shrink-0">
+            <Link href={`/propagation?plantId=${plant.id}`}
+              className="p-2 rounded-lg border text-neutral-500 hover:text-amber-700 hover:border-amber-300 hover:bg-amber-50 transition-colors"
+              title="Take cuttings">
+              <ScissorsIcon className="w-4 h-4" />
+            </Link>
+            <Link href={`/plants/${plant.id}/edit`}
+              className="p-2 rounded-lg border text-neutral-500 hover:text-rose-700 hover:border-rose-300 hover:bg-rose-50 transition-colors"
+              title="Edit plant">
+              <PencilIcon className="w-4 h-4" />
+            </Link>
+            <ShareButton plant={plant} />
+          </div>
         </div>
         {rose && (
           <div className="flex flex-wrap gap-1.5 mt-2">

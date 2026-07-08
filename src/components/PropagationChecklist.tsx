@@ -23,10 +23,18 @@ export interface PropagationPlant {
   variety_count: number
 }
 
-export function PropagationChecklist({ initialPlants }: { initialPlants: PropagationPlant[] }) {
+export function PropagationChecklist({
+  initialPlants,
+  autoOpenPlantId = null,
+}: {
+  initialPlants: PropagationPlant[]
+  autoOpenPlantId?: string | null
+}) {
   const [plants, setPlants] = useState(initialPlants)
   const [updating, setUpdating] = useState<Set<string>>(new Set())
-  const [activeCuttingId, setActiveCuttingId] = useState<string | null>(null)
+  const [activeCuttingId, setActiveCuttingId] = useState<string | null>(autoOpenPlantId)
+  const [showOrphanForm, setShowOrphanForm] = useState(false)
+  const [orphanLabel, setOrphanLabel] = useState('')
   const [batchCode, setBatchCode] = useState('')
   const [cutCount, setCutCount] = useState(1)
   const [cutNotes, setCutNotes] = useState('')
@@ -219,6 +227,64 @@ export function PropagationChecklist({ initialPlants }: { initialPlants: Propaga
           </div>
         </section>
       )}
+
+      {/* Orphan batch — unlisted / wild cutting */}
+      <section className="mt-4 pt-4 border-t">
+        <div className="flex items-center justify-between mb-2">
+          <h2 className="text-xs font-bold uppercase tracking-wide text-neutral-400">Unlisted / Wild Cuttings</h2>
+          <button onClick={() => setShowOrphanForm(f => !f)}
+            className="text-xs text-amber-600 hover:text-amber-800 font-medium">
+            {showOrphanForm ? 'Cancel' : '+ Record cutting'}
+          </button>
+        </div>
+        {showOrphanForm && (
+          <div className="border rounded-xl p-3 bg-amber-50/60 space-y-2">
+            <p className="text-xs text-neutral-500">For cuttings taken from plants not in your inventory (wild roses, neighbours&apos; gardens, etc.)</p>
+            <input type="text" value={orphanLabel} onChange={e => setOrphanLabel(e.target.value)}
+              placeholder="Label / description (e.g. Wild pink climber from back fence)"
+              className="w-full px-2.5 py-1.5 border rounded-lg text-sm outline-none focus:ring-1 focus:ring-amber-400 bg-white" />
+            <div className="flex gap-2">
+              <div className="flex-1">
+                <label className="text-xs text-neutral-500">Batch code</label>
+                <input type="text" value={batchCode} onChange={e => setBatchCode(e.target.value)}
+                  placeholder="e.g. WLD-0708"
+                  className="mt-0.5 w-full px-2.5 py-1.5 border rounded-lg text-xs font-mono outline-none focus:ring-1 focus:ring-amber-400 bg-white" />
+              </div>
+              <div className="w-20">
+                <label className="text-xs text-neutral-500">Count</label>
+                <input type="number" min="1" value={cutCount} onChange={e => setCutCount(Math.max(1, parseInt(e.target.value) || 1))}
+                  className="mt-0.5 w-full text-center px-2 py-1.5 border rounded-lg text-sm outline-none focus:ring-1 focus:ring-amber-400 bg-white" />
+              </div>
+            </div>
+            <button
+              onClick={async () => {
+                if (!orphanLabel.trim() || !batchCode.trim()) return
+                setSavingBatch(true)
+                try {
+                  const supabase = getSupabase()
+                  await supabase.from('propagation_batches').insert({
+                    parent_plant_id: null,
+                    batch_label: orphanLabel.trim(),
+                    batch_code: batchCode.trim(),
+                    date_taken: new Date().toISOString().split('T')[0],
+                    initial_count: cutCount,
+                    notes: cutNotes.trim() || null,
+                    status: 'active',
+                  })
+                  setShowOrphanForm(false)
+                  setOrphanLabel('')
+                  setBatchCode('')
+                  setCutCount(1)
+                  toast.success(`Batch ${batchCode} recorded`)
+                } catch { toast.error('Failed to save') } finally { setSavingBatch(false) }
+              }}
+              disabled={savingBatch || !orphanLabel.trim() || !batchCode.trim()}
+              className="w-full bg-amber-600 hover:bg-amber-700 disabled:opacity-60 text-white text-xs font-semibold py-2.5 rounded-lg">
+              {savingBatch ? 'Saving…' : `Record ${cutCount} cutting${cutCount > 1 ? 's' : ''}`}
+            </button>
+          </div>
+        )}
+      </section>
     </div>
   )
 }

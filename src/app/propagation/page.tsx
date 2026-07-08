@@ -38,7 +38,11 @@ async function getPropagationData() {
   }))
 }
 
-export default async function PropagationPage() {
+export default async function PropagationPage({
+  searchParams,
+}: {
+  searchParams: { plantId?: string }
+}) {
   const plants = await getPropagationData()
 
   return (
@@ -49,7 +53,7 @@ export default async function PropagationPage() {
           Tap a plant to cycle its status. Critical plants have no backup — clone these first.
         </p>
       </div>
-      <PropagationChecklist initialPlants={plants} />
+      <PropagationChecklist initialPlants={plants} autoOpenPlantId={searchParams.plantId ?? null} />
     </div>
   )
 }
