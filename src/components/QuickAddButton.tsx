@@ -80,7 +80,6 @@ export function QuickAddButton() {
           garden_id: gardenId || null,
           label_name: rose.canonical_name,
           date_planted: accessionDate || null,
-          propagation_status: 'none' as PropagationStatus,
           position_index: null,
           notes: null,
           sun_index: null,
@@ -92,7 +91,8 @@ export function QuickAddButton() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(rows),
       })
-      if (!res.ok) throw new Error('Failed')
+      const json = await res.json()
+      if (!res.ok) throw new Error(json.error ?? 'HTTP ' + res.status)
       toast.success(`Added ${rows.length} plant${rows.length > 1 ? 's' : ''} — tap any to edit details`)
       router.refresh()
       close()
