@@ -1,6 +1,6 @@
 # Rosarium — Feature Backlog
 
-Last updated: 2026-07-07
+Last updated: 2026-07-08
 
 ---
 
@@ -16,7 +16,7 @@ Last updated: 2026-07-07
 | 6 | Club Member Gardens & Photos | Large | 🔲 Blocked by Auth (#5) |
 | 7 | Built-in Rosarium Social Feed | Large | 🔲 Blocked by Auth (#5) + Club (#6) |
 | 8 | Bloom Prediction / Analytics expansion | Medium | 🔲 Needs more log data |
-| 9 | Offline / Service Worker | Medium | 🔲 Backlog |
+| 9 | Offline / Service Worker | Medium | ✅ Done — `@ducanh2912/next-pwa`, `/offline` fallback page |
 
 ---
 
