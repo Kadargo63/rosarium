@@ -21,7 +21,9 @@ export function QuickAddButton() {
   const [gardenId, setGardenId] = useState('')
   const [accessionDate, setAccessionDate] = useState(() => new Date().toISOString().split('T')[0] as string)
   const [saving, setSaving] = useState(false)
-  const [view, setView] = useState<'search' | 'browse'>('browse')
+  const [showCreate, setShowCreate] = useState(false)
+  const [createForm, setCreateForm] = useState({ class_code: 'HT', color_code: 'mp', breeder_code: '', year: '', country: '' })
+  const [creating, setCreating] = useState(false)
   const inputRef = useRef<HTMLInputElement>(null)
 
   useEffect(() => {
@@ -45,6 +47,7 @@ export function QuickAddButton() {
     closeStore()
     setQuery('')
     setSelected(new Set())
+    setShowCreate(false)
   }, [closeStore])
 
   const filteredRoses = query.length < 1
@@ -96,6 +99,44 @@ export function QuickAddButton() {
   const metaLine = (r: RoseEntity) =>
     [r.class_code, r.breeder_code, r.year_introduced, r.country_of_origin].filter(Boolean).join(' · ')
 
+  const CLASS_OPTIONS = [
+    { v: 'HT', label: 'Hybrid Tea', growth: 'hybrid_tea', pruning: 'NEW_GROWTH_DOMINANT' },
+    { v: 'F', label: 'Floribunda', growth: 'floribunda', pruning: 'NEW_GROWTH_DOMINANT' },
+    { v: 'G', label: 'Grandiflora', growth: 'grandiflora', pruning: 'NEW_GROWTH_DOMINANT' },
+    { v: 'S', label: 'Shrub', growth: 'shrub', pruning: 'MIXED_CANE' },
+    { v: 'Cl HT', label: 'Climber', growth: 'climber', pruning: 'MIXED_CANE' },
+    { v: 'Min', label: 'Miniature', growth: 'miniature', pruning: 'NEW_GROWTH_DOMINANT' },
+    { v: 'OGR', label: 'Old Garden', growth: 'old_garden', pruning: 'OLD_WOOD_SENSITIVE' },
+  ] as const
+
+  const createCatalogEntry = async () => {
+    if (!query.trim()) return
+    setCreating(true)
+    try {
+      const cls = CLASS_OPTIONS.find(c => c.v === createForm.class_code) ?? CLASS_OPTIONS[0]!
+      const supabase = getSupabase()
+      const { data, error } = await supabase.from('rose_entities').insert({
+        canonical_name: query.trim(),
+        class_code: cls.v,
+        color_code: createForm.color_code || null,
+        breeder_code: createForm.breeder_code.trim() || null,
+        year_introduced: createForm.year ? parseInt(createForm.year) : null,
+        country_of_origin: createForm.country.trim() || null,
+        growth_type: cls.growth,
+        pruning_model: cls.pruning,
+        plant_structure_type: cls.growth === 'climber' ? 'vine_runner' : 'cane',
+        species: 'Rosa x hybrida',
+      }).select().single()
+      if (error) throw error
+      setRoses(prev => [...prev, data as RoseEntity].sort((a, b) => a.canonical_name.localeCompare(b.canonical_name)))
+      setSelected(prev => new Set([...prev, (data as RoseEntity).id]))
+      setShowCreate(false)
+      setCreateForm({ class_code: 'HT', color_code: 'mp', breeder_code: '', year: '', country: '' })
+      toast.success(`"${query}" added to catalog and selected`)
+      setQuery('')
+    } catch { toast.error('Failed to create catalog entry') } finally { setCreating(false) }
+  }
+
   if (!open) return null
 
   return (
@@ -142,8 +183,59 @@ export function QuickAddButton() {
           {loading && (
             <div className="text-center py-10 text-sm text-neutral-400">Loading catalog…</div>
           )}
-          {!loading && filteredRoses.length === 0 && (
-            <div className="text-center py-10 text-sm text-neutral-400">No matches for &ldquo;{query}&rdquo;</div>
+          {!loading && filteredRoses.length === 0 && query.length >= 1 && (
+            <div className="px-4 py-6 space-y-3">
+              <p className="text-sm text-neutral-400 text-center">&ldquo;{query}&rdquo; not found in catalog</p>
+              {!showCreate ? (
+                <button onClick={() => setShowCreate(true)}
+                  className="w-full border-2 border-dashed border-rose-200 text-rose-500 hover:border-rose-400 hover:bg-rose-50 rounded-xl py-3 text-sm font-medium transition-colors">
+                  + Add &ldquo;{query}&rdquo; to rose catalog
+                </button>
+              ) : (
+                <div className="border rounded-xl p-4 space-y-3 bg-neutral-50">
+                  <p className="text-xs font-semibold text-neutral-600 uppercase tracking-wide">New catalog entry: {query}</p>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <label className="text-xs text-neutral-500">Class</label>
+                      <select value={createForm.class_code} onChange={e => setCreateForm(f => ({...f, class_code: e.target.value}))}
+                        className="mt-0.5 w-full text-sm px-2 py-1.5 border rounded-lg outline-none focus:ring-1 focus:ring-rose-300 bg-white">
+                        {CLASS_OPTIONS.map(c => <option key={c.v} value={c.v}>{c.label}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-neutral-500">Color code</label>
+                      <select value={createForm.color_code} onChange={e => setCreateForm(f => ({...f, color_code: e.target.value}))}
+                        className="mt-0.5 w-full text-sm px-2 py-1.5 border rounded-lg outline-none focus:ring-1 focus:ring-rose-300 bg-white">
+                        {Object.entries(COLOR_CODE_LABELS).map(([k, v]) => <option key={k} value={k}>{v}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <label className="text-xs text-neutral-500">Breeder code</label>
+                      <input value={createForm.breeder_code} onChange={e => setCreateForm(f => ({...f, breeder_code: e.target.value}))}
+                        placeholder="e.g. KOR, WEK" className="mt-0.5 w-full text-sm px-2 py-1.5 border rounded-lg outline-none focus:ring-1 focus:ring-rose-300 bg-white" />
+                    </div>
+                    <div>
+                      <label className="text-xs text-neutral-500">Year introduced</label>
+                      <input type="number" value={createForm.year} onChange={e => setCreateForm(f => ({...f, year: e.target.value}))}
+                        placeholder="e.g. 2019" className="mt-0.5 w-full text-sm px-2 py-1.5 border rounded-lg outline-none focus:ring-1 focus:ring-rose-300 bg-white" />
+                    </div>
+                  </div>
+                  <div>
+                    <label className="text-xs text-neutral-500">Country of origin</label>
+                    <input value={createForm.country} onChange={e => setCreateForm(f => ({...f, country: e.target.value}))}
+                      placeholder="e.g. Germany, England, United States"
+                      className="mt-0.5 w-full text-sm px-2 py-1.5 border rounded-lg outline-none focus:ring-1 focus:ring-rose-300 bg-white" />
+                  </div>
+                  <div className="flex gap-2">
+                    <button onClick={createCatalogEntry} disabled={creating}
+                      className="flex-1 bg-rose-600 hover:bg-rose-700 disabled:opacity-60 text-white text-sm font-semibold py-2.5 rounded-xl">
+                      {creating ? 'Adding…' : 'Add to catalog'}
+                    </button>
+                    <button onClick={() => setShowCreate(false)} className="px-4 border rounded-xl text-sm text-neutral-600 hover:bg-neutral-50">Cancel</button>
+                  </div>
+                </div>
+              )}
+            </div>
           )}
           {!loading && filteredRoses.map(rose => {
             const isSelected = selected.has(rose.id)
