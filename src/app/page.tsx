@@ -4,9 +4,8 @@ import { getPlants } from '@/lib/queries'
 import { getNeedsAttention, getTopPerformers } from '@/lib/analytics'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
+import { PhoneQR } from '@/components/PhoneQR'
 import Link from 'next/link'
-
-export const revalidate = 60
 
 export default async function DashboardPage() {
   const [plants, topPerformers, needsAttention] = await Promise.all([
@@ -24,9 +23,14 @@ export default async function DashboardPage() {
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-2xl font-bold text-rose-900">Rosarium</h1>
-        <p className="text-neutral-500 text-sm mt-1">Your rose intelligence system</p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-rose-900">Rosarium</h1>
+          <p className="text-neutral-500 text-sm mt-1">Your rose intelligence system</p>
+        </div>
+        <div className="hidden md:block flex-shrink-0">
+          <PhoneQR />
+        </div>
       </div>
 
       {/* Stats row */}

@@ -1,7 +1,6 @@
 export const dynamic = 'force-dynamic'
 
 import { PropagationChecklist } from '@/components/PropagationChecklist'
-import { PhoneQR } from '@/components/PhoneQR'
 import { supabase } from '@/lib/supabase'
 import type { PropagationStatus } from '@/types/schema'
 
@@ -44,16 +43,11 @@ export default async function PropagationPage() {
 
   return (
     <div className="space-y-4">
-      <div className="flex items-start justify-between gap-4">
-        <div>
-          <h1 className="text-xl font-bold text-rose-900">Propagation Tracker</h1>
-          <p className="text-sm text-neutral-500 mt-0.5">
-            Tap a plant to cycle its status. Critical plants have no backup — clone these first.
-          </p>
-        </div>
-        <div className="hidden md:block flex-shrink-0">
-          <PhoneQR />
-        </div>
+      <div>
+        <h1 className="text-xl font-bold text-rose-900">Propagation Tracker</h1>
+        <p className="text-sm text-neutral-500 mt-0.5">
+          Tap a plant to cycle its status. Critical plants have no backup — clone these first.
+        </p>
       </div>
       <PropagationChecklist initialPlants={plants} />
     </div>

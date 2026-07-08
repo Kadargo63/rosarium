@@ -6,8 +6,6 @@ import Link from 'next/link'
 import { PlusIcon } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 
-export const revalidate = 60
-
 export default async function PlantsPage() {
   const [plants, gardens] = await Promise.all([getPlants(), getGardens()])
 
